@@ -1,1 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國七先修：暑期進度獵人儀表板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        window.mermaid = mermaid;
+    </script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<div class="max-w-6xl mx-auto p-4">
+    <header class="bg-blue-600 text-white rounded-lg shadow-md p-6 mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold">🎯 暑期進度獵人儀表板</h1>
+            <p class="mt-2 text-blue-100">時間管理 × 概念建立 × 弱科補強</p>
+        </div>
+        <div class="text-right">
+            <span class="text-xl font-bold">🛡️ 目前盾牌數：<span id="shield-count">0</span></span>
+        </div>
+    </header>
+
+    <!-- 導覽列 -->
+    <nav class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+        <button onclick="switchTab('tab-passport')" class="nav-btn bg-white px-4 py-2 rounded shadow font-semibold text-blue-600 hover:bg-blue-50">1. 進度護照</button>
+        <button onclick="switchTab('tab-tracker')" class="nav-btn bg-white px-4 py-2 rounded shadow font-semibold text-gray-600 hover:bg-blue-50">2. 進度追蹤表</button>
+        <button onclick="switchTab('tab-error')" class="nav-btn bg-white px-4 py-2 rounded shadow font-semibold text-gray-600 hover:bg-blue-50">3. 錯題診斷</button>
+        <button onclick="switchTab('tab-mindmap')" class="nav-btn bg-white px-4 py-2 rounded shadow font-semibold text-gray-600 hover:bg-blue-50">4. 心智圖模板</button>
+        <button onclick="switchTab('tab-flashcard')" class="nav-btn bg-white px-4 py-2 rounded shadow font-semibold text-gray-600 hover:bg-blue-50">5. 計算卡生成</button>
+        <button onclick="switchTab('tab-quiz')" class="nav-btn bg-white px-4 py-2 rounded shadow font-semibold text-gray-600 hover:bg-blue-50">6. 周考出卷</button>
+    </nav>
+
+    <!-- 工具 1：進度護照 -->
+    <div id="tab-passport" class="tab-content active bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-bold mb-4 border-b pb-2">📋 本週任務護照 (集滿10個盾牌解鎖週末)</h2>
+        <div id="passport-tasks" class="space-y-3">
+            <!-- JS 動態生成 -->
+        </div>
+        <button onclick="resetPassport()" class="mt-6 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">重置本週任務</button>
+    </div>
+
+    <!-- 工具 2：進度追蹤表 -->
+    <div id="tab-tracker" class="tab-content bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-bold mb-4 border-b pb-2">📈 每日進度追蹤表</h2>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+            <input type="date" id="track-date" class="border p-2 rounded">
+            <select id="track-subject" class="border p-2 rounded">
+                <option value="數學">數學</option>
+                <option value="生物">生物</option>
+                <option value="歷史">歷史</option>
+                <option value="地理">地理</option>
+            </select>
+            <input type="number" id="track-time" placeholder="時間(分鐘)" class="border p-2 rounded">
+            <select id="track-rating" class="border p-2 rounded">
+                <option value="⭐⭐⭐⭐⭐">⭐⭐⭐⭐⭐ 極好</option>
+                <option value="⭐⭐⭐⭐">⭐⭐⭐⭐ 順利</option>
+                <option value="⭐⭐⭐">⭐⭐⭐ 普通</option>
+                <option value="⭐⭐">⭐⭐ 卡關</option>
+            </select>
+            <button onclick="addLog('tracker')" class="bg-green-500 text-white p-2 rounded font-bold">新增紀錄</button>
+        </div>
+        <table class="w-full text-left border-collapse">
+            <thead><tr class="bg-gray-100"><th class="p-2 border">日期</th><th class="p-2 border">科目</th><th class="p-2 border">時間</th><th class="p-2 border">成效評分</th><th class="p-2 border">操作</th></tr></thead>
+            <tbody id="tracker-list"></tbody>
+        </table>
+    </div>
+
+    <!-- 工具 3：錯題診斷紀錄 -->
+    <div id="tab-error" class="tab-content bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-bold mb-4 border-b pb-2">🎯 錯題醫生診斷表</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <input type="text" id="err-source" placeholder="來源 (例: 數學P.8)" class="border p-2 rounded">
+            <select id="err-reason" class="border p-2 rounded">
+                <option value="粗心大意">粗心大意</option>
+                <option value="觀念不懂">觀念不懂</option>
+                <option value="看不懂題目">看不懂題目</option>
+            </select>
+            <input type="text" id="err-solution" placeholder="正確觀念 / 算式" class="border p-2 rounded col-span-2">
+        </div>
+        <button onclick="addLog('error')" class="bg-green-500 text-white px-4 py-2 rounded font-bold mb-6">新增錯題</button>
+        
+        <table class="w-full text-left border-collapse">
+            <thead><tr class="bg-gray-100"><th class="p-2 border">來源</th><th class="p-2 border">錯誤原因</th><th class="p-2 border">正確觀念 (處方箋)</th><th class="p-2 border">操作</th></tr></thead>
+            <tbody id="error-list"></tbody>
+        </table>
+    </div>
+
+    <!-- 工具 4：心智圖模板 -->
+    <div id="tab-mindmap" class="tab-content bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-bold mb-4 border-b pb-2">🧠 自然科心智圖產生器</h2>
+        <p class="mb-4 text-gray-600">利用縮排輸入概念，自動轉換為心智圖。適合整理生物細胞、生態系等章節。</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <textarea id="mindmap-input" class="w-full h-64 border p-4 rounded font-mono text-sm" placeholder="輸入格式範例：
+生物體
+- 細胞
+-- 細胞核 (生命中樞)
+-- 細胞質 (化學反應)
+-- 細胞膜 (控制進出)
+- 組織
+- 器官"></textarea>
+                <button onclick="generateMindMap()" class="mt-4 bg-purple-500 text-white px-4 py-2 rounded font-bold w-full">生成心智圖</button>
+            </div>
+            <div class="border p-4 rounded bg-gray-50 flex items-center justify-center min-h-[16rem]">
+                <div id="mindmap-output"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 工具 5：計算卡生成器 -->
+    <div id="tab-flashcard" class="tab-content bg-white p-6 rounded-lg shadow-md text-center">
+        <h2 class="text-2xl font-bold mb-4 border-b pb-2">⚡ 數學正負數/分數 閃卡生成器</h2>
+        <div class="flex justify-center space-x-4 mb-6">
+            <button onclick="generateCard('integer')" class="bg-blue-500 text-white px-4 py-2 rounded font-bold">生成正負數題</button>
+            <button onclick="generateCard('fraction')" class="bg-indigo-500 text-white px-4 py-2 rounded font-bold">生成分數題</button>
+        </div>
+        <div class="my-8">
+            <div id="card-question" class="text-5xl font-mono font-bold mb-6 text-gray-800 tracking-wider">?</div>
+            <button onclick="showAnswer()" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-full font-bold hover:bg-gray-300">顯示答案</button>
+            <div id="card-answer" class="text-3xl font-mono font-bold text-red-500 mt-6 hidden"></div>
+        </div>
+    </div>
+
+    <!-- 工具 6：周考出卷工具 -->
+    <div id="tab-quiz" class="tab-content bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-bold mb-4 border-b pb-2">📜 隨機周考出卷機 (數學+生物觀念)</h2>
+        <button onclick="generateQuiz()" class="bg-yellow-500 text-white px-4 py-2 rounded font-bold mb-6">生成綜合複習卷</button>
+        <div id="quiz-container" class="space-y-4 text-lg hidden">
+            <h3 class="font-bold text-xl text-blue-600">第一部分：數學計算 (請在紙上計算)</h3>
+            <ol id="quiz-math" class="list-decimal list-inside space-y-2 bg-gray-50 p-4 rounded"></ol>
+            <h3 class="font-bold text-xl text-green-600 mt-6">第二部分：自然科觀念題 (是非/簡答)</h3>
+            <ol id="quiz-bio" class="list-decimal list-inside space-y-2 bg-gray-50 p-4 rounded"></ol>
+            <button onclick="document.getElementById('quiz-answers').classList.toggle('hidden')" class="mt-6 bg-gray-200 px-4 py-2 rounded">對答案</button>
+            <div id="quiz-answers" class="hidden mt-4 p-4 bg-red-50 rounded text-red-600 font-mono"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- 頁面切換邏輯 ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.replace('text-blue-600', 'text-gray-600');
+        });
+        event.target.classList.replace('text-gray-600', 'text-blue-600');
+    }
+
+    // --- 工具 1：護照邏輯 (LocalStorage) ---
+    const defaultTasks = [
+        "數學：完成均一平台 / 銜接講義 1 頁", "數學：完成均一平台 / 銜接講義 1 頁", "數學：完成均一平台 / 銜接講義 1 頁",
+        "數學：完成錯題訂正", "生物：閱讀自然科普文章或影片 1 次", "生物：閱讀自然科普文章或影片 1 次",
+        "社會：閱讀歷史故事 / 繪製地理地圖 1 次", "社會：閱讀歷史故事 / 繪製地理地圖 1 次",
+        "大魔王：向父母講解本週學到的一個觀念"
+    ];
+
+    function loadPassport() {
+        let tasks = JSON.parse(localStorage.getItem('passportTasks')) || defaultTasks.map(t => ({name: t, done: false}));
+        renderPassport(tasks);
+    }
+
+    function renderPassport(tasks) {
+        const container = document.getElementById('passport-tasks');
+        container.innerHTML = '';
+        let shields = 0;
+        tasks.forEach((task, index) => {
+            if(task.done) shields++;
+            container.innerHTML += `
+                <label class="flex items-center space-x-3 p-3 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer">
+                    <input type="checkbox" class="form-checkbox h-6 w-6 text-blue-600" ${task.done ? 'checked' : ''} onchange="toggleTask(${index})">
+                    <span class="text-lg ${task.done ? 'line-through text-gray-400' : 'text-gray-800'}">🛡️ ${task.name}</span>
+                </label>`;
+        });
+        document.getElementById('shield-count').innerText = shields;
+        localStorage.setItem('passportTasks', JSON.stringify(tasks));
+    }
+
+    function toggleTask(index) {
+        let tasks = JSON.parse(localStorage.getItem('passportTasks'));
+        tasks[index].done = !tasks[index].done;
+        renderPassport(tasks);
+    }
+
+    function resetPassport() {
+        if(confirm('確定要清空本週任務嗎？')) {
+            localStorage.removeItem('passportTasks');
+            loadPassport();
+        }
+    }
+
+    // --- 工具 2 & 3：追蹤表與錯題本邏輯 (LocalStorage) ---
+    function loadLogs() {
+        renderTable('tracker', ['date', 'subject', 'time', 'rating']);
+        renderTable('error', ['source', 'reason', 'solution']);
+    }
+
+    function addLog(type) {
+        let data = JSON.parse(localStorage.getItem(type + 'Logs')) || [];
+        let newItem = {};
+        if (type === 'tracker') {
+            newItem = {
+                id: Date.now(),
+                date: document.getElementById('track-date').value || new Date().toISOString().split('T')[0],
+                subject: document.getElementById('track-subject').value,
+                time: document.getElementById('track-time').value + ' 分鐘',
+                rating: document.getElementById('track-rating').value
+            };
+        } else {
+            newItem = {
+                id: Date.now(),
+                source: document.getElementById('err-source').value || '未填寫',
+                reason: document.getElementById('err-reason').value,
+                solution: document.getElementById('err-solution').value || '待補'
+            };
+        }
+        data.push(newItem);
+        localStorage.setItem(type + 'Logs', JSON.stringify(data));
+        renderTable(type, Object.keys(newItem).filter(k => k!=='id'));
+    }
+
+    function renderTable(type, keys) {
+        let data = JSON.parse(localStorage.getItem(type + 'Logs')) || [];
+        let tbody = document.getElementById(type + '-list');
+        tbody.innerHTML = '';
+        data.forEach(item => {
+            let row = `<tr class="border-b">`;
+            keys.forEach(k => { row += `<td class="p-2">${item[k]}</td>`; });
+            row += `<td class="p-2"><button onclick="deleteLog('${type}', ${item.id})" class="text-red-500 hover:text-red-700">刪除</button></td></tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function deleteLog(type, id) {
+        let data = JSON.parse(localStorage.getItem(type + 'Logs')) || [];
+        data = data.filter(item => item.id !== id);
+        localStorage.setItem(type + 'Logs', JSON.stringify(data));
+        loadLogs();
+    }
+
+    // --- 工具 4：心智圖產生器 ---
+    async function generateMindMap() {
+        const input = document.getElementById('mindmap-input').value;
+        const lines = input.split('\n').filter(l => l.trim() !== '');
+        if(lines.length === 0) return;
+        
+        let mermaidCode = 'mindmap\n  root((' + lines[0].trim() + '))\n';
+        for(let i = 1; i < lines.length; i++) {
+            let line = lines[i];
+            let level = (line.match(/-/g) || []).length;
+            let text = line.replace(/-/g, '').trim();
+            let indent = '  '.repeat(level + 1);
+            mermaidCode += `${indent}(${text})\n`;
+        }
+
+        const outputDiv = document.getElementById('mindmap-output');
+        outputDiv.innerHTML = `<pre class="mermaid">${mermaidCode}</pre>`;
+        try {
+            await window.mermaid.run({ nodes: outputDiv.querySelectorAll('.mermaid') });
+        } catch (e) {
+            outputDiv.innerHTML = "<p class='text-red-500'>生成失敗，請檢查輸入格式。第一行必須是無層級的主題。</p>";
+        }
+    }
+
+    // --- 工具 5：計算卡邏輯 ---
+    let currentAnswer = "";
+    function generateCard(type) {
+        document.getElementById('card-answer').classList.add('hidden');
+        let q = "";
+        if(type === 'integer') {
+            let a = Math.floor(Math.random() * 40) - 20;
+            let b = Math.floor(Math.random() * 40) - 20;
+            let op = Math.random() > 0.5 ? '+' : '-';
+            q = `(${a}) ${op} (${b}) = ?`;
+            currentAnswer = op === '+' ? (a + b) : (a - b);
+        } else {
+            let n1 = Math.floor(Math.random() * 5) + 1;
+            let d1 = Math.floor(Math.random() * 5) + 2;
+            let n2 = Math.floor(Math.random() * 5) + 1;
+            let d2 = Math.floor(Math.random() * 5) + 2;
+            q = `${n1}/${d1} + ${n2}/${d2} = ?`;
+            // 簡易通分答案計算 (未約分)
+            currentAnswer = `${(n1*d2) + (n2*d1)} / ${d1*d2} (請記得約分!)`;
+        }
+        document.getElementById('card-question').innerText = q;
+        document.getElementById('card-answer').innerText = currentAnswer;
+    }
+
+    function showAnswer() {
+        document.getElementById('card-answer').classList.remove('hidden');
+    }
+
+    // --- 工具 6：周考出卷邏輯 ---
+    const bioBank = [
+        {q: "顯微鏡的物鏡越長，倍率越大還是越小？", a: "越大"},
+        {q: "控制細胞物質進出的構造是？", a: "細胞膜"},
+        {q: "植物細胞特有，動物細胞沒有的構造是哪兩個？", a: "細胞壁、葉綠體"},
+        {q: "觀察水中小生物時，若生物往右上方游動，玻片應該往哪個方向移動？", a: "右上方"}
+    ];
+
+    function generateQuiz() {
+        document.getElementById('quiz-container').classList.remove('hidden');
+        document.getElementById('quiz-answers').classList.add('hidden');
+        
+        // 數學題 5 題
+        let mathHtml = '';
+        let ansHtml = '數學解答：\n';
+        for(let i=1; i<=5; i++){
+            let a = Math.floor(Math.random() * 30) - 15;
+            let b = Math.floor(Math.random() * 30) - 15;
+            let c = Math.floor(Math.random() * 10) - 5;
+            let qStr = `|${a}| - (${b}) × (${c}) = ?`;
+            let ans = Math.abs(a) - (b * c);
+            mathHtml += `<li>${qStr}</li>`;
+            ansHtml += `${i}. ${ans}  `;
+        }
+        document.getElementById('quiz-math').innerHTML = mathHtml;
+
+        // 生物題 3 題 (亂數抽)
+        let bioHtml = '';
+        ansHtml += '\n\n自然分解答：\n';
+        let shuffledBio = bioBank.sort(() => 0.5 - Math.random()).slice(0, 3);
+        shuffledBio.forEach((item, idx) => {
+            bioHtml += `<li>${item.q}</li>`;
+            ansHtml += `${idx+1}. ${item.a}  `;
+        });
+        document.getElementById('quiz-bio').innerHTML = bioHtml;
+        document.getElementById('quiz-answers').innerText = ansHtml;
+    }
+
+    // 啟動時載入資料
+    window.onload = function() {
+        loadPassport();
+        loadLogs();
+        document.getElementById('mindmap-input').value = "生物體\n- 細胞\n-- 細胞核\n-- 細胞質\n-- 細胞膜\n- 組織\n- 器官\n- 器官系統";
+    };
+</script>
+</body>
+</html>
 
